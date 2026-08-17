@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GTA SA RP - Chat Editor</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙</text></svg>">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0d0d0d;--sidebar:#141414;--panel:#1a1a1a;--panel2:#222;--border:#333;--accent:#008AAF;--accent2:#e94560;--text:#ccc;--text2:#888}
+html,body{height:100%;overflow:hidden;font-family:'Segoe UI',Tahoma,sans-serif;background:var(--bg);color:var(--text)}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:var(--panel)}::-webkit-scrollbar-thumb{background:#555;border-radius:3px}
+.layout{display:flex;height:100vh;width:100vw}
+
+.sidebar{width:300px;min-width:300px;background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;z-index:100}
+.sidebar-header{padding:12px 16px;background:linear-gradient(135deg,#0a1628,#0d2137);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.sidebar-header h1{font-size:14px;font-weight:700;color:#e94560;letter-spacing:1px;text-transform:uppercase}
+.sidebar-header .logo{font-size:20px;color:#e94560}
+.sidebar-scroll{flex:1;overflow-y:auto;padding:6px}
+
+.section{margin-bottom:5px;border:1px solid var(--border);border-radius:5px;overflow:hidden;background:var(--panel)}
+.section-header{padding:9px 12px;background:var(--panel2);cursor:pointer;display:flex;align-items:center;gap:8px;user-select:none;transition:background .15s}
+.section-header:hover{background:#2a2a2a}
+.section-header h3{flex:1;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text)}
+.section-header .arrow{color:var(--text2);font-size:9px;transition:transform .2s}
+.section-header.open .arrow{transform:rotate(90deg)}
+.section-body{padding:10px 12px;display:none}
+.section-body.open{display:block}
+
+.form-row{margin-bottom:7px}
+.form-row label{display:block;font-size:10px;color:var(--text2);margin-bottom:2px;text-transform:uppercase;letter-spacing:.3px}
+.form-row input,.form-row select,.form-row textarea{width:100%;padding:6px 8px;background:#111;border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:11px;font-family:inherit;outline:none;transition:border .15s}
+.form-row input:focus,.form-row select:focus,.form-row textarea:focus{border-color:var(--accent)}
+.form-row textarea{resize:vertical;min-height:44px}
+.form-row select{cursor:pointer}.form-row select option{background:#111;color:var(--text)}
+.form-inline{display:flex;gap:5px;align-items:flex-end}
+.form-inline .form-row{flex:1;margin-bottom:0}
+
+.btn{padding:6px 12px;border:none;border-radius:4px;cursor:pointer;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;transition:all .15s;font-family:inherit}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:#009dbf}
+.btn-danger{background:var(--accent2);color:#fff}.btn-danger:hover{background:#ff5a7a}
+.btn-secondary{background:#333;color:var(--text)}.btn-secondary:hover{background:#444}
+.btn-sm{padding:4px 8px;font-size:9px}.btn-block{width:100%}
+.btn-group{display:flex;gap:3px;margin-top:5px}
+
+.btn-addbox{width:100%;padding:12px;border:2px dashed var(--accent);border-radius:6px;background:rgba(0,138,175,.08);color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;text-transform:uppercase;letter-spacing:.5px;font-family:inherit;margin-bottom:8px}
+.btn-addbox:hover{background:rgba(0,138,175,.2);border-color:#00b8d4;transform:scale(1.01)}
+.btn-addbox:active{transform:scale(.98)}
+
+.char-list{list-style:none;max-height:130px;overflow-y:auto}
+.char-item{display:flex;align-items:center;justify-content:space-between;padding:5px 7px;border-radius:4px;margin-bottom:2px;background:#111;border:1px solid transparent;cursor:pointer;transition:all .12s}
+.char-item:hover{border-color:var(--border)}
+.char-item .name{font-size:11px;flex:1}
+.char-item .delete{color:var(--accent2);cursor:pointer;font-size:13px;padding:0 3px;opacity:.5;transition:opacity .12s}
+.char-item .delete:hover{opacity:1}
+
+.msg-type-tabs{display:flex;flex-wrap:wrap;gap:2px;margin-bottom:7px}
+.msg-type-tab{padding:4px 7px;font-size:9px;border:1px solid var(--border);border-radius:3px;background:var(--panel2);color:var(--text2);cursor:pointer;transition:all .12s;font-family:inherit;text-transform:uppercase;letter-spacing:.3px}
+.msg-type-tab:hover{border-color:var(--accent);color:var(--text)}
+.msg-type-tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+.no-box-hint{font-size:10px;color:var(--accent2);text-align:center;padding:8px;border:1px dashed var(--accent2);border-radius:4px;margin-top:6px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:.6}50%{opacity:1}}
+
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.shadow-row{display:flex;align-items:center;gap:6px}
+.shadow-row input[type=number]{width:60px;text-align:center;padding:5px 2px;font-size:11px;background:#111;border:1px solid var(--border);border-radius:4px;color:var(--text);outline:none}
+.shadow-row input[type=number]:focus{border-color:var(--accent)}
+
+.workspace-area{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+
+/* ===== TAB BAR ===== */
+.tab-bar{display:flex;align-items:stretch;background:#111;border-bottom:1px solid var(--border);min-height:38px;overflow-x:auto;flex-shrink:0;position:relative;padding:0 4px}
+.tab-bar::-webkit-scrollbar{height:3px}
+.tab-bar-inner{display:flex;align-items:stretch;gap:2px;height:100%;padding-top:4px}
+.tab{display:flex;align-items:center;gap:6px;padding:0 14px;background:var(--panel);border-radius:8px 8px 0 0;cursor:pointer;user-select:none;white-space:nowrap;font-size:11px;color:var(--text2);position:relative;transition:background .1s,transform .1s;border:1px solid transparent;border-bottom:none;min-height:32px}
+.tab:hover{background:#2a2a2a;color:var(--text)}
+.tab.active{background:var(--bg);color:var(--accent);border-color:var(--border);border-bottom:1px solid var(--bg);z-index:2}
+.tab.dragging{opacity:.3;transform:scale(.95)}
+.tab.drop-left::before{content:'';position:absolute;left:-3px;top:4px;bottom:4px;width:3px;background:var(--accent);border-radius:2px;z-index:5}
+.tab.drop-right::after{content:'';position:absolute;right:-3px;top:4px;bottom:4px;width:3px;background:var(--accent);border-radius:2px;z-index:5}
+.tab img{width:22px;height:15px;object-fit:cover;border-radius:3px;border:1px solid var(--border)}
+.tab .tab-close{color:var(--text2);font-size:13px;padding:1px 4px;border-radius:4px;transition:all .1s;margin-left:6px;line-height:1}
+.tab .tab-close:hover{color:#fff;background:var(--accent2)}
+.tab-empty{display:flex;align-items:center;padding:0 14px;color:var(--text2);font-size:11px;font-style:italic}
+.tab-ghost{position:fixed;pointer-events:none;z-index:10000;display:flex;align-items:center;gap:6px;padding:0 14px;background:var(--accent);color:#fff;border-radius:8px 8px 0 0;font-size:11px;white-space:nowrap;min-height:32px;box-shadow:0 4px 16px rgba(0,0,0,.5);opacity:.9}
+.tab-ghost img{width:22px;height:15px;object-fit:cover;border-radius:3px;border:1px solid rgba(255,255,255,.3)}
+
+.workspace-toolbar{padding:6px 12px;background:var(--sidebar);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0}
+.workspace-toolbar .title{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px}
+.workspace-toolbar .sep{width:1px;height:18px;background:var(--border)}
+
+.workspace-scroll{flex:1;overflow:auto;position:relative;background:#1a1a1a}
+.workspace{position:relative;background:#111;overflow:visible;transform-origin:top left;margin:0 auto}
+.workspace-bg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;overflow:hidden}
+.workspace-bg img{width:100%;height:100%;object-fit:contain;display:block}
+.workspace-grid{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1;background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.06) 0 1px,transparent 1px 10px),repeating-linear-gradient(90deg,rgba(255,255,255,.06) 0 1px,transparent 1px 10px);background-size:10px 10px}
+.workspace-noimage{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:var(--text2);pointer-events:none;z-index:0}
+.workspace-noimage h2{font-size:16px;margin-bottom:4px;font-weight:400}
+.workspace-noimage p{font-size:11px}
+
+.rp-box{position:absolute;min-width:80px;min-height:40px;border:1px solid transparent;border-radius:3px;cursor:move}
+.rp-box:hover{box-shadow:0 2px 16px rgba(0,0,0,.5)}
+.rp-box.selected{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 2px 16px rgba(0,0,0,.5)}
+.rp-box.dragging{opacity:.8;z-index:9999}
+.rp-box-content{position:relative;padding:6px 8px;min-height:30px;overflow-y:auto;display:flex;flex-direction:column;gap:0;pointer-events:auto}
+.rp-msg{white-space:pre-wrap;word-break:break-word;position:relative}
+.rp-msg:hover .rp-msg-delete{opacity:.7}
+.rp-msg-delete{position:absolute;right:-4px;top:50%;transform:translateY(-50%);opacity:0;transition:opacity .12s;cursor:pointer;color:var(--accent2);font-size:11px;background:rgba(0,0,0,.8);border-radius:3px;padding:0 4px;z-index:5;line-height:1.4}
+.rp-msg-delete:hover{opacity:1!important;background:var(--accent2);color:#fff}
+
+.rp-handle{position:absolute;width:8px;height:8px;background:var(--accent);border:1.5px solid #fff;border-radius:1px;z-index:20;display:none}
+.rp-box.selected .rp-handle{display:block}
+.rp-handle-nw{top:-4px;left:-4px;cursor:nw-resize}.rp-handle-n{top:-4px;left:50%;margin-left:-4px;cursor:n-resize}.rp-handle-ne{top:-4px;right:-4px;cursor:ne-resize}
+.rp-handle-e{top:50%;margin-top:-4px;right:-4px;cursor:e-resize}.rp-handle-se{bottom:-4px;right:-4px;cursor:se-resize}.rp-handle-s{bottom:-4px;left:50%;margin-left:-4px;cursor:s-resize}
+.rp-handle-sw{bottom:-4px;left:-4px;cursor:sw-resize}.rp-handle-w{top:50%;margin-top:-4px;left:-4px;cursor:w-resize}
+
+.rp-box-delete{position:absolute;top:3px;left:3px;z-index:15;opacity:0;transition:opacity .12s;cursor:pointer;color:var(--accent2);font-size:11px;background:rgba(0,0,0,.7);border-radius:3px;padding:1px 5px;border:1px solid rgba(233,69,96,.3)}
+.rp-box:hover .rp-box-delete{opacity:1}
+.rp-box-delete:hover{background:rgba(233,69,96,.3)}
+
+.rp-inline-editor{background:transparent;border:1px dashed var(--accent);color:var(--text);outline:none;width:100%;resize:none;overflow:hidden;padding:2px 4px}
+
+.img-upload-zone{border:2px dashed var(--border);border-radius:5px;padding:16px;text-align:center;cursor:pointer;transition:all .15s;margin-bottom:6px}
+.img-upload-zone:hover{border-color:var(--accent);background:rgba(0,138,175,.05)}
+.img-upload-zone p{font-size:10px;color:var(--text2)}
+</style>
+</head>
+<body>
+<div class="layout">
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <span class="logo">&#9881;</span>
+      <h1>GTA SA RP Editor</h1>
+    </div>
+    <div class="sidebar-scroll">
+
+      <div class="section">
+        <div class="section-header open" onclick="toggleSection(this)">
+          <h3>Personajes</h3><span class="arrow">&#9654;</span>
+        </div>
+        <div class="section-body open">
+          <div class="form-inline">
+            <div class="form-row"><label>Nombre</label><input type="text" id="charName" placeholder="German"></div>
+            <div class="form-row"><label>Apellido</label><input type="text" id="charLast" placeholder="Gascoigne"></div>
+          </div>
+          <div class="form-row" style="margin-top:5px">
+            <button class="btn btn-primary btn-block btn-sm" onclick="addCharacter()">Agregar</button>
+          </div>
+          <ul class="char-list" id="charList"></ul>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header open" onclick="toggleSection(this)">
+          <h3>Imágenes</h3><span class="arrow">&#9654;</span>
+        </div>
+        <div class="section-body open">
+          <div class="img-upload-zone" id="imgZone" onclick="document.getElementById('imgInput').click()">
+            <p>Clic o arrastra imágenes aquí</p>
+          </div>
+          <input type="file" id="imgInput" accept="image/*" multiple style="display:none" onchange="handleImageUpload(event)">
+          <p style="font-size:9px;color:var(--text2);margin-top:4px">Cada imagen crea una pestaña</p>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header open" onclick="toggleSection(this)">
+          <h3>Crear Mensaje</h3><span class="arrow">&#9654;</span>
+        </div>
+        <div class="section-body open">
+          <div id="noBoxHint" class="no-box-hint" style="display:none">Selecciona o crea una caja de texto primero</div>
+          <button class="btn-addbox" onclick="addBox()">+ Caja de Texto</button>
+          <div class="msg-type-tabs" id="msgTypeTabs"></div>
+          <div id="msgFields">
+            <div class="form-row" id="msgCharRow">
+              <label>Personaje</label>
+              <select id="msgChar"></select>
+            </div>
+            <div class="form-row" id="msgRankRow" style="display:none">
+              <label>Rango / Título</label>
+              <input type="text" id="msgRank" placeholder="SAPD - Capitán III">
+            </div>
+            <div class="form-row" id="msgFreqRow" style="display:none">
+              <label>Frecuencia <span style="opacity:.5">(opcional, ej: ####)</span></label>
+              <input type="text" id="msgFreq" placeholder="####" maxlength="4" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+            </div>
+            <div class="form-row">
+              <label id="msgTextLabel">Mensaje</label>
+              <textarea id="msgText" rows="2" placeholder="Escribe..."></textarea>
+            </div>
+            <button class="btn btn-primary btn-block btn-sm" onclick="addMessage()">Agregar Mensaje</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" id="boxSettingsSection" style="display:none">
+        <div class="section-header open" onclick="toggleSection(this)">
+          <h3>Config. Caja</h3><span class="arrow">&#9654;</span>
+        </div>
+        <div class="section-body open">
+          <div class="settings-grid">
+            <div class="form-row"><label>Ancho</label><input type="number" id="boxW" min="80" max="5000" onchange="updateSelectedBox()"></div>
+            <div class="form-row"><label>Alto</label><input type="number" id="boxH" min="40" max="5000" onchange="updateSelectedBox()"></div>
+            <div class="form-row"><label>X</label><input type="number" id="boxX" onchange="updateSelectedBox()"></div>
+            <div class="form-row"><label>Y</label><input type="number" id="boxY" onchange="updateSelectedBox()"></div>
+          </div>
+          <div class="form-row">
+            <label>Fondo</label>
+            <select id="boxBgType" onchange="updateSelectedBox()">
+              <option value="transparent" selected>Transparente</option>
+              <option value="black">Negro absoluto</option>
+              <option value="custom">Color personalizado</option>
+            </select>
+          </div>
+          <div class="form-row" id="boxBgColorRow" style="display:none">
+            <label>Color + Opacidad</label>
+            <div class="form-inline">
+              <input type="color" id="boxBgColor" value="#000000" onchange="updateSelectedBox()" style="width:36px;height:28px;padding:2px;cursor:pointer">
+              <input type="number" id="boxBgOpacity" min="0" max="100" value="100" onchange="updateSelectedBox()" style="width:60px;text-align:center">
+            </div>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-secondary btn-sm" onclick="clearBoxMessages()">Limpiar msgs</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteSelectedBox()">Eliminar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header open" onclick="toggleSection(this)">
+          <h3>Texto Global</h3><span class="arrow">&#9654;</span>
+        </div>
+        <div class="section-body open">
+          <div class="settings-grid">
+            <div class="form-row">
+              <label>Fuente</label>
+              <select id="globalFont" onchange="updateGlobal()">
+                <option value="Tahoma Bold" selected>Tahoma Bold</option>
+                <option value="Arial">Arial</option>
+                <option value="Verdana">Verdana</option>
+                <option value="Tahoma">Tahoma</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label>Tamaño</label>
+              <input type="number" id="globalFontSize" value="20" min="8" max="72" onchange="updateGlobal()">
+            </div>
+          </div>
+          
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="workspace-area">
+    <div class="tab-bar" id="tabBar">
+      <div class="tab-bar-inner" id="tabBarInner">
+        <div class="tab-empty">Sube imágenes para crear pestañas</div>
+      </div>
+    </div>
+    <div class="workspace-toolbar">
+      <span class="title">1920×1080</span>
+      <div class="sep"></div>
+      <span class="title">Grid 10px</span>
+      <div class="sep"></div>
+      <span class="title" id="workspaceInfo"></span>
+      <div style="flex:1"></div>
+      <button class="btn btn-primary btn-sm" onclick="downloadAllAsJPG()" id="downloadBtn" style="display:none">Descargar JPG</button>
+    </div>
+    <div class="workspace-scroll" id="workspaceScroll">
+      <div class="workspace" id="workspace">
+        <div class="workspace-bg" id="workspaceBg"></div>
+        <div class="workspace-grid" id="workspaceGrid"></div>
+        <div class="workspace-noimage" id="noImageMsg">
+          <h2>Sin pestañas</h2>
+          <p>Sube imágenes desde la barra lateral</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const WORKSPACE_W = 1920, WORKSPACE_H = 1080;
+const S = {
+  characters: [], images: [], activeImageId: null, boxes: [],
+  selectedBoxId: null, nextId: 1, snapSize: 10,
+  globalFont: 'Tahoma Bold', globalFontSize: 20, globalShadow: 2.5
+};
+const MSG_TYPES = [
+  { id: 'speech', label: 'Hablar' },
+  { id: 'action_short', label: '/ame' },
+  { id: 'action_long', label: '/me' },
+  { id: 'environment', label: 'Entorno' },
+  { id: 'radio_normal', label: '/r' },
+  { id: 'radio_faction', label: '/rf' },
+  { id: 'radio_dept', label: '/rd' }
+];
+let currentMsgType = 'speech', resizeSt = null, workspaceScale = 1;
+
+function gid() { return S.nextId++; }
+function snap(v) { return Math.round(v / S.snapSize) * S.snapSize; }
+function toggleSection(h) { h.classList.toggle('open'); h.nextElementSibling.classList.toggle('open'); }
+
+// ==================== WORKSPACE SCALING ====================
+function updateWorkspaceScale() {
+  const scroll = document.getElementById('workspaceScroll');
+  const ws = document.getElementById('workspace');
+  const availW = scroll.clientWidth, availH = scroll.clientHeight;
+  workspaceScale = Math.min(availW / WORKSPACE_W, availH / WORKSPACE_H);
+  ws.style.width = WORKSPACE_W + 'px'; ws.style.height = WORKSPACE_H + 'px';
+  ws.style.transform = `scale(${workspaceScale})`; ws.style.transformOrigin = 'top left';
+  ws.style.marginTop = Math.max(0, (availH - WORKSPACE_H * workspaceScale) / 2) + 'px';
+  ws.style.marginLeft = Math.max(0, (availW - WORKSPACE_W * workspaceScale) / 2) + 'px';
+}
+
+// ==================== MSG TYPE TABS ====================
+function renderMsgTypeTabs() {
+  document.getElementById('msgTypeTabs').innerHTML = MSG_TYPES.map(t =>
+    `<div class="msg-type-tab${t.id===currentMsgType?' active':''}" onclick="currentMsgType='${t.id}';renderMsgTypeTabs();updateMsgFields()">${t.label}</div>`
+  ).join('');
+}
+
+function updateMsgFields() {
+  const t = currentMsgType, isRadio = t.startsWith('radio');
+  const needsChar = t === 'speech' || isRadio || t === 'action_long';
+  document.getElementById('msgCharRow').style.display = needsChar ? '' : 'none';
+  document.getElementById('msgRankRow').style.display = (isRadio && t !== 'radio_normal') ? '' : 'none';
+  document.getElementById('msgFreqRow').style.display = (t === 'radio_normal') ? '' : 'none';
+  const lbl = document.getElementById('msgTextLabel');
+  if (t === 'environment') lbl.textContent = 'Descripción del entorno';
+  else if (t === 'action_short') lbl.textContent = 'Acción corta (ej: Aplaude)';
+  else if (t === 'action_long') lbl.textContent = 'Acción larga';
+  else lbl.textContent = 'Mensaje';
+  updateNoBoxHint();
+}
+
+function updateNoBoxHint() {
+  const hint = document.getElementById('noBoxHint'), fields = document.getElementById('msgFields');
+  if (!S.selectedBoxId || !S.boxes.find(b => b.id === S.selectedBoxId)) {
+    hint.style.display = ''; fields.style.opacity = '.4'; fields.style.pointerEvents = 'none';
+  } else { hint.style.display = 'none'; fields.style.opacity = '1'; fields.style.pointerEvents = ''; }
+}
+
+// ==================== CHARACTERS ====================
+function addCharacter() {
+  const n = document.getElementById('charName').value.trim(), l = document.getElementById('charLast').value.trim();
+  if (!n) return;
+  S.characters.push({ id: gid(), name: n, lastName: l });
+  document.getElementById('charName').value = ''; document.getElementById('charLast').value = '';
+  renderAll();
+}
+function removeCharacter(id) { S.characters = S.characters.filter(c => c.id !== id); renderAll(); }
+function renderCharacters() {
+  document.getElementById('charList').innerHTML = S.characters.map(c =>
+    `<li class="char-item"><span class="name">${c.name} ${c.lastName}</span><span class="delete" onclick="removeCharacter(${c.id})">&times;</span></li>`
+  ).join('');
+  document.getElementById('msgChar').innerHTML = S.characters.map(c =>
+    `<option value="${c.id}">${c.name} ${c.lastName}</option>`
+  ).join('');
+}
+
+// ==================== IMAGES / TABS ====================
+function handleImageUpload(e) {
+  Array.from(e.target.files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      S.images.push({ id: gid(), name: file.name.replace(/\.[^.]+$/,''), dataUrl: ev.target.result });
+      if (!S.activeImageId) S.activeImageId = S.images[S.images.length - 1].id;
+      renderAll();
+    };
+    reader.readAsDataURL(file);
+  });
+  e.target.value = '';
+}
+
+function setupImgZone() {
+  const z = document.getElementById('imgZone');
+  z.addEventListener('dragover', e => { e.preventDefault(); z.style.borderColor = 'var(--accent)'; });
+  z.addEventListener('dragleave', () => { z.style.borderColor = ''; });
+  z.addEventListener('drop', e => {
+    e.preventDefault(); z.style.borderColor = '';
+    Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/')).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        S.images.push({ id: gid(), name: file.name.replace(/\.[^.]+$/,''), dataUrl: ev.target.result });
+        if (!S.activeImageId) S.activeImageId = S.images[S.images.length - 1].id;
+        renderAll();
+      };
+      reader.readAsDataURL(file);
+    });
+  });
+}
+
+function switchTab(imgId) { S.activeImageId = imgId; S.selectedBoxId = null; renderAll(); }
+function removeTab(imgId) {
+  S.images = S.images.filter(i => i.id !== imgId);
+  S.boxes = S.boxes.filter(b => b.imageId !== imgId);
+  if (S.activeImageId === imgId) S.activeImageId = S.images.length ? S.images[0].id : null;
+  if (S.selectedBoxId && !S.boxes.find(b => b.id === S.selectedBoxId)) S.selectedBoxId = null;
+  renderAll();
+}
+
+// ==================== TAB DRAG ====================
+let tabDrag = null;
+
+function renderTabs() {
+  const inner = document.getElementById('tabBarInner');
+  if (!S.images.length) { inner.innerHTML = '<div class="tab-empty">Sube imágenes para crear pestañas</div>'; return; }
+  inner.innerHTML = S.images.map(img => {
+    const a = img.id === S.activeImageId;
+    return `<div class="tab${a?' active':''}" data-img-id="${img.id}">
+      <img src="${img.dataUrl}"><span>${img.name}</span>
+      <span class="tab-close" data-close="${img.id}">&times;</span>
+    </div>`;
+  }).join('');
+
+  inner.querySelectorAll('.tab').forEach(el => {
+    const imgId = parseInt(el.dataset.imgId);
+    el.addEventListener('click', e => {
+      if (e.target.closest('.tab-close')) { removeTab(parseInt(e.target.dataset.close)); return; }
+      switchTab(imgId);
+    });
+    el.addEventListener('mousedown', e => {
+      if (e.target.closest('.tab-close') || e.button !== 0) return;
+      e.preventDefault();
+      const rect = el.getBoundingClientRect();
+      const ghost = el.cloneNode(true);
+      ghost.className = 'tab-ghost';
+      ghost.style.left = rect.left + 'px';
+      ghost.style.top = rect.top + 'px';
+      ghost.style.width = rect.width + 'px';
+      document.body.appendChild(ghost);
+      el.classList.add('dragging');
+      tabDrag = { id: imgId, el, ghost, startX: e.clientX, offsetX: e.clientX - rect.left, moved: false };
+    });
+  });
+}
+
+document.addEventListener('mousemove', e => {
+  if (!tabDrag) return;
+  const dx = e.clientX - tabDrag.startX;
+  if (Math.abs(dx) > 3) tabDrag.moved = true;
+  if (!tabDrag.moved) return;
+  tabDrag.ghost.style.left = (e.clientX - tabDrag.offsetX) + 'px';
+
+  const inner = document.getElementById('tabBarInner');
+  const tabs = [...inner.querySelectorAll('.tab:not(.dragging)')];
+  tabs.forEach(t => { t.classList.remove('drop-left', 'drop-right'); });
+
+  let insertBefore = null;
+  for (const t of tabs) {
+    const r = t.getBoundingClientRect();
+    const mid = r.left + r.width / 2;
+    if (e.clientX < mid) { insertBefore = t; break; }
+  }
+
+  if (insertBefore) insertBefore.classList.add('drop-left');
+  else if (tabs.length) tabs[tabs.length - 1].classList.add('drop-right');
+});
+
+document.addEventListener('mouseup', e => {
+  if (!tabDrag) return;
+  tabDrag.ghost.remove();
+  tabDrag.el.classList.remove('dragging');
+
+  if (tabDrag.moved) {
+    const inner = document.getElementById('tabBarInner');
+    const tabs = [...inner.querySelectorAll('.tab:not(.dragging)')];
+    let insertIdx = S.images.length;
+    for (let i = 0; i < tabs.length; i++) {
+      const r = tabs[i].getBoundingClientRect();
+      if (e.clientX < r.left + r.width / 2) { insertIdx = i; break; }
+    }
+    const fromIdx = S.images.findIndex(i => i.id === tabDrag.id);
+    if (fromIdx !== -1 && fromIdx !== insertIdx) {
+      const [moved] = S.images.splice(fromIdx, 1);
+      if (insertIdx > fromIdx) insertIdx--;
+      S.images.splice(insertIdx, 0, moved);
+    }
+    tabs.forEach(t => t.classList.remove('drop-left', 'drop-right'));
+    renderTabs();
+  }
+
+  tabDrag = null;
+});
+
+function renderWorkspaceBg() {
+  const bg = document.getElementById('workspaceBg'), noImg = document.getElementById('noImageMsg');
+  const img = S.images.find(i => i.id === S.activeImageId);
+  if (img) { bg.innerHTML = `<img src="${img.dataUrl}">`; noImg.style.display = 'none'; }
+  else { bg.innerHTML = ''; noImg.style.display = ''; }
+  document.getElementById('workspaceInfo').textContent = img ? `${img.name} · ${S.boxes.filter(b => b.imageId === S.activeImageId).length} cajas` : '';
+}
+
+// ==================== BOXES ====================
+function addBox() {
+  const scroll = document.getElementById('workspaceScroll');
+  const cx = snap(Math.max(0, Math.round((scroll.scrollLeft + scroll.clientWidth / 2) / workspaceScale - 210)));
+  const cy = snap(Math.max(0, Math.round((scroll.scrollTop + scroll.clientHeight / 2) / workspaceScale - 60)));
+  const box = {
+    id: gid(), name: `Caja ${S.boxes.length + 1}`, imageId: S.activeImageId,
+    x: cx, y: cy, w: 420, h: 120,
+    bgType: 'transparent', bgColor: '#000000', bgOpacity: 100, messages: []
+  };
+  S.boxes.push(box);
+  S.selectedBoxId = box.id;
+  renderAll();
+}
+
+function selectBox(id) {
+  S.selectedBoxId = id;
+  document.querySelectorAll('.rp-box').forEach(el => el.classList.toggle('selected', parseInt(el.dataset.id) === id));
+  renderBoxSettings(); updateNoBoxHint();
+}
+function deselectAll() {
+  S.selectedBoxId = null;
+  document.querySelectorAll('.rp-box').forEach(el => el.classList.remove('selected'));
+  renderBoxSettings(); updateNoBoxHint();
+}
+function deleteSelectedBox() { if (!S.selectedBoxId) return; S.boxes = S.boxes.filter(b => b.id !== S.selectedBoxId); S.selectedBoxId = null; renderAll(); }
+function clearBoxMessages() { const b = S.boxes.find(b => b.id === S.selectedBoxId); if (b) { b.messages = []; renderAll(); } }
+function deleteMessage(boxId, msgId) { const b = S.boxes.find(b => b.id === boxId); if (b) { b.messages = b.messages.filter(m => m.id !== msgId); renderBoxes(); } }
+
+function updateSelectedBox() {
+  const b = S.boxes.find(b => b.id === S.selectedBoxId);
+  if (!b) return;
+  b.w = Math.max(80, parseInt(document.getElementById('boxW').value) || 400);
+  b.h = Math.max(40, parseInt(document.getElementById('boxH').value) || 120);
+  b.x = parseInt(document.getElementById('boxX').value) || 0;
+  b.y = parseInt(document.getElementById('boxY').value) || 0;
+  b.bgType = document.getElementById('boxBgType').value;
+  b.bgColor = document.getElementById('boxBgColor').value;
+  b.bgOpacity = parseInt(document.getElementById('boxBgOpacity').value);
+  document.getElementById('boxBgColorRow').style.display = b.bgType === 'custom' ? '' : 'none';
+  const el = document.querySelector(`.rp-box[data-id="${b.id}"]`);
+  if (el) { el.style.left=b.x+'px'; el.style.top=b.y+'px'; el.style.width=b.w+'px'; el.style.minHeight=b.h+'px'; }
+}
+
+function renderBoxSettings() {
+  const sec = document.getElementById('boxSettingsSection');
+  const b = S.boxes.find(b => b.id === S.selectedBoxId);
+  if (!b) { sec.style.display = 'none'; return; }
+  sec.style.display = '';
+  document.getElementById('boxW').value = b.w; document.getElementById('boxH').value = b.h;
+  document.getElementById('boxX').value = Math.round(b.x); document.getElementById('boxY').value = Math.round(b.y);
+  document.getElementById('boxBgType').value = b.bgType;
+  document.getElementById('boxBgColor').value = b.bgColor; document.getElementById('boxBgOpacity').value = b.bgOpacity;
+  document.getElementById('boxBgColorRow').style.display = b.bgType === 'custom' ? '' : 'none';
+}
+
+// ==================== GLOBAL ====================
+function updateGlobal() {
+  S.globalFont = document.getElementById('globalFont').value;
+  S.globalFontSize = parseInt(document.getElementById('globalFontSize').value) || 20;
+  renderBoxes();
+}
+
+// ==================== MESSAGES ====================
+function addMessage() {
+  if (!S.selectedBoxId) return;
+  const text = document.getElementById('msgText').value.trim();
+  if (!text) return;
+  const box = S.boxes.find(b => b.id === S.selectedBoxId);
+  if (!box) return;
+  const charId = parseInt(document.getElementById('msgChar').value);
+  const character = S.characters.find(c => c.id === charId);
+  box.messages.push({
+    id: gid(), type: currentMsgType,
+    character: character ? `${character.name} ${character.lastName}` : '',
+    rank: document.getElementById('msgRank').value.trim(),
+    freq: document.getElementById('msgFreq').value.trim(),
+    text
+  });
+  document.getElementById('msgText').value = '';
+  renderBoxes();
+}
+
+function escH(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function getShadowCSS() {
+  const v = S.globalShadow;
+  if (v <= 0) return '';
+  return `text-shadow:${v}px ${v}px ${Math.max(v,1)}px #000;`;
+}
+
+function fmtMsg(m) {
+  const base = `font-family:'${S.globalFont}',Tahoma,sans-serif;font-size:${S.globalFontSize}px;line-height:1.15;${getShadowCSS()}`;
+  switch (m.type) {
+    case 'speech': {
+      const pre = m.rank ? `[${escH(m.rank)}]` : (m.character ? '[ING]' : '');
+      return `<span class="rp-msg" style="${base}"><span style="color:#E7D9B0">${pre} ${escH(m.character||'')} dice:</span> <span style="color:#EBF4F6">${escH(m.text)}</span></span>`;
+    }
+    case 'action_short':
+      return `<span class="rp-msg" style="${base}"><span style="color:#F900FF;font-weight:bold">* ${escH(m.text)} *</span></span>`;
+    case 'action_long': {
+      const nm = escH(m.character || '');
+      return `<span class="rp-msg" style="${base}"><span style="color:#F900FF;font-weight:bold">* ${nm} ${escH(m.text)} *</span></span>`;
+    }
+    case 'environment':
+      return `<span class="rp-msg" style="${base}"><span style="color:#EBF4F6;font-weight:bold">${escH(m.text)}</span></span>`;
+    case 'radio_normal': {
+      const fr = escH(m.freq || '####');
+      return `<span class="rp-msg" style="${base}"><span style="color:#008AAF">[${fr}Hz]</span> <span style="color:#E7D9B0">[ING] ${escH(m.character||'')}:</span> <span style="color:#EBF4F6">${escH(m.text)}</span></span>`;
+    }
+    case 'radio_faction': {
+      const rk = m.rank ? `[${escH(m.rank)}]` : '[ING]';
+      return `<span class="rp-msg" style="${base}"><span style="color:#008AAF">[RF] ${rk} ${escH(m.character||'')}:</span> <span style="color:#EBF4F6">${escH(m.text)}</span></span>`;
+    }
+    case 'radio_dept': {
+      const rk = m.rank ? `[${escH(m.rank)}]` : '[ING]';
+      return `<span class="rp-msg" style="${base}"><span style="color:#e94560">[RD]</span> <span style="color:#008AAF">${rk} dice:</span> <span style="color:#EBF4F6">${escH(m.text)}</span></span>`;
+    }
+    default: return `<span class="rp-msg" style="${base}">${escH(m.text)}</span>`;
+  }
+}
+
+function getMsgPrefix(m) {
+  switch (m.type) {
+    case 'speech': { const pre = m.rank ? `[${m.rank}]` : (m.character ? '[ING]' : ''); return `${pre} ${m.character||''} dice: `; }
+    case 'action_short': return '* ';
+    case 'action_long': return `* ${m.character||''} `;
+    case 'environment': return '';
+    case 'radio_normal': return `[${m.freq||'####'}Hz] [ING] ${m.character||''}: `;
+    case 'radio_faction': { const rk = m.rank ? `[${m.rank}]` : '[ING]'; return `[RF] ${rk} ${m.character||''}: `; }
+    case 'radio_dept': { const rk = m.rank ? `[${m.rank}]` : '[ING]'; return `[RD] ${rk} dice: `; }
+    default: return '';
+  }
+}
+function getMsgSuffix(m) { return (m.type === 'action_short' || m.type === 'action_long') ? ' *' : ''; }
+
+// ==================== RENDER BOXES ====================
+function renderBoxes() {
+  const ws = document.getElementById('workspace');
+  ws.querySelectorAll('.rp-box').forEach(el => el.remove());
+
+  S.boxes.filter(b => !S.activeImageId || b.imageId === S.activeImageId).forEach(box => {
+    const el = document.createElement('div');
+    el.className = 'rp-box' + (box.id === S.selectedBoxId ? ' selected' : '');
+    el.dataset.id = box.id;
+    el.style.cssText = `left:${box.x}px;top:${box.y}px;width:${box.w}px;min-height:${box.h}px`;
+
+    let bgCSS = 'transparent';
+    if (box.bgType === 'black') bgCSS = '#000000';
+    else if (box.bgType === 'custom') {
+      const c = box.bgColor;
+      bgCSS = `rgba(${parseInt(c.slice(1,3),16)},${parseInt(c.slice(3,5),16)},${parseInt(c.slice(5,7),16)},${box.bgOpacity/100})`;
+    }
+
+    el.innerHTML = `
+      <div style="position:absolute;inset:0;background:${bgCSS};border-radius:3px;pointer-events:none;z-index:0"></div>
+      <div class="rp-box-delete" data-action="delete-box">&times;</div>
+      <div class="rp-box-content" id="boxContent${box.id}">
+        ${box.messages.map((m,i) => `<div class="rp-msg-row" data-msg-idx="${i}">${fmtMsg(m)}<span class="rp-msg-delete" data-action="delete-msg" data-box="${box.id}" data-msg="${m.id}">&times;</span></div>`).join('')}
+      </div>
+      ${['nw','n','ne','e','se','s','sw','w'].map(d=>`<div class="rp-handle rp-handle-${d}" data-dir="${d}"></div>`).join('')}
+    `;
+
+    el.addEventListener('mousedown', e => { if (!e.target.closest('.rp-handle') && !e.target.closest('[data-action]')) selectBox(box.id); });
+    el.addEventListener('mousedown', e => {
+      if (e.target.closest('.rp-handle') || e.target.closest('[data-action]') || e.button !== 0) return;
+      e.preventDefault(); dragSt = { id: box.id, sx: e.clientX, sy: e.clientY, ox: box.x, oy: box.y };
+      el.classList.add('dragging');
+    });
+    el.querySelectorAll('.rp-handle').forEach(h => {
+      h.addEventListener('mousedown', e => { e.preventDefault(); e.stopPropagation(); resizeSt = { id: box.id, dir: h.dataset.dir, sx: e.clientX, sy: e.clientY, ox: box.x, oy: box.y, ow: box.w, oh: el.offsetHeight }; });
+    });
+    el.querySelector('[data-action="delete-box"]').addEventListener('click', e => { e.stopPropagation(); S.boxes = S.boxes.filter(x => x.id !== box.id); if (S.selectedBoxId === box.id) S.selectedBoxId = null; renderAll(); });
+    el.querySelectorAll('[data-action="delete-msg"]').forEach(btn => {
+      btn.addEventListener('click', e => { e.stopPropagation(); deleteMessage(parseInt(btn.dataset.box), parseInt(btn.dataset.msg)); });
+    });
+    el.addEventListener('dblclick', e => {
+      const row = e.target.closest('.rp-msg-row');
+      if (!row || e.target.closest('[data-action]')) return;
+      const idx = parseInt(row.dataset.msgIdx);
+      const msg = box.messages[idx];
+      if (!msg) return;
+      startInlineEdit(box, msg, idx, row);
+    });
+    ws.appendChild(el);
+  });
+
+  renderWorkspaceBg(); renderBoxSettings(); updateNoBoxHint();
+}
+
+// ==================== INLINE EDIT ====================
+function startInlineEdit(box, msg, idx, rowEl) {
+  const prefix = getMsgPrefix(msg), suffix = getMsgSuffix(msg);
+  const sh = getShadowCSS();
+  const baseFont = `font-family:'${S.globalFont}',Tahoma,sans-serif;font-size:${S.globalFontSize}px;line-height:1.15;`;
+  const ta = document.createElement('textarea');
+  ta.className = 'rp-inline-editor';
+  ta.value = msg.text;
+  ta.rows = 1;
+  ta.style.cssText = baseFont + sh;
+
+  rowEl.innerHTML = '';
+  if (prefix) { const pre = document.createElement('span'); pre.style.cssText = baseFont + 'color:#888;opacity:.6;pointer-events:none;white-space:pre'; pre.textContent = prefix; rowEl.appendChild(pre); }
+  rowEl.appendChild(ta);
+  if (suffix) { const suf = document.createElement('span'); suf.style.cssText = baseFont + 'color:#888;opacity:.6;pointer-events:none;white-space:pre'; suf.textContent = suffix; rowEl.appendChild(suf); }
+  ta.focus(); ta.select(); ta.style.height = ta.scrollHeight + 'px';
+  ta.addEventListener('input', () => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; });
+
+  let done = false;
+  function finish() {
+    if (done) return; done = true;
+    const newText = ta.value.trim();
+    if (!newText) { box.messages.splice(idx, 1); }
+    else { msg.text = newText; }
+    renderBoxes();
+  }
+  ta.addEventListener('blur', finish);
+  ta.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ta.blur(); }
+    if (e.key === 'Escape') { ta.value = msg.text; ta.blur(); }
+  });
+}
+
+// ==================== DRAG BOX ====================
+let dragSt = null;
+document.addEventListener('mousemove', e => {
+  if (dragSt) {
+    const b = S.boxes.find(b => b.id === dragSt.id);
+    if (!b) return;
+    b.x = snap(Math.max(0, dragSt.ox + (e.clientX - dragSt.sx) / workspaceScale));
+    b.y = snap(Math.max(0, dragSt.oy + (e.clientY - dragSt.sy) / workspaceScale));
+    const el = document.querySelector(`.rp-box[data-id="${dragSt.id}"]`);
+    if (el) { el.style.left = b.x + 'px'; el.style.top = b.y + 'px'; }
+    if (S.selectedBoxId === dragSt.id) { document.getElementById('boxX').value = Math.round(b.x); document.getElementById('boxY').value = Math.round(b.y); }
+  }
+  if (resizeSt) {
+    const b = S.boxes.find(b => b.id === resizeSt.id);
+    if (!b) return;
+    const dx = (e.clientX - resizeSt.sx) / workspaceScale, dy = (e.clientY - resizeSt.sy) / workspaceScale;
+    const d = resizeSt.dir;
+    let nx = resizeSt.ox, ny = resizeSt.oy, nw = resizeSt.ow, nh = resizeSt.oh;
+    if (d.includes('e')) nw = Math.max(80, resizeSt.ow + dx);
+    if (d.includes('w')) { nw = Math.max(80, resizeSt.ow - dx); nx = resizeSt.ox + (resizeSt.ow - nw); }
+    if (d.includes('s')) nh = Math.max(40, resizeSt.oh + dy);
+    if (d.includes('n')) { nh = Math.max(40, resizeSt.oh - dy); ny = resizeSt.oy + (resizeSt.oh - nh); }
+    b.x = snap(nx); b.y = snap(ny); b.w = snap(nw); b.h = snap(nh);
+    const el = document.querySelector(`.rp-box[data-id="${b.id}"]`);
+    if (el) { el.style.left=b.x+'px'; el.style.top=b.y+'px'; el.style.width=b.w+'px'; el.style.minHeight=b.h+'px'; }
+    if (S.selectedBoxId === b.id) {
+      document.getElementById('boxX').value=Math.round(b.x); document.getElementById('boxY').value=Math.round(b.y);
+      document.getElementById('boxW').value=Math.round(b.w); document.getElementById('boxH').value=Math.round(b.h);
+    }
+  }
+});
+document.addEventListener('mouseup', () => {
+  if (dragSt) { const el = document.querySelector(`.rp-box[data-id="${dragSt.id}"]`); if (el) el.classList.remove('dragging'); dragSt = null; }
+  if (resizeSt) resizeSt = null;
+});
+
+// ==================== KEYBOARD ====================
+document.addEventListener('keydown', e => {
+  if (e.key === 'Delete' && S.selectedBoxId && !e.target.matches('input,textarea,select')) deleteSelectedBox();
+  if (e.key === 'Escape') deselectAll();
+});
+document.getElementById('charLast').addEventListener('keydown', e => { if (e.key === 'Enter') addCharacter(); });
+document.getElementById('charName').addEventListener('keydown', e => { if (e.key === 'Enter') addCharacter(); });
+document.getElementById('msgText').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addMessage(); } });
+
+function downloadAllAsJPG() {
+  if (!S.images.length) return;
+  const ws = document.getElementById('workspace');
+  const origScale = workspaceScale;
+  ws.style.transform = 'scale(1)';
+  ws.style.margin = '0';
+  ws.style.width = WORKSPACE_W + 'px';
+  ws.style.height = WORKSPACE_H + 'px';
+
+  const activeImageId = S.activeImageId;
+  const results = [];
+
+  function processImage(idx) {
+    if (idx >= S.images.length) {
+      results.forEach((dataUrl, i) => {
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = S.images[i].name + '.jpg';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      });
+      S.activeImageId = activeImageId;
+      renderAll();
+      updateWorkspaceScale();
+      return;
+    }
+    S.activeImageId = S.images[idx].id;
+    renderBoxes();
+
+    requestAnimationFrame(() => {
+      html2canvas(ws, {
+        width: WORKSPACE_W,
+        height: WORKSPACE_H,
+        scale: 1,
+        backgroundColor: '#111111',
+        useCORS: true
+      }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = S.images[idx].name + '.jpg';
+        link.href = canvas.toDataURL('image/jpeg', 0.95);
+        results.push(link.href);
+        processImage(idx + 1);
+      });
+    });
+  }
+
+  if (typeof html2canvas === 'undefined') {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+    script.onload = () => processImage(0);
+    document.head.appendChild(script);
+  } else {
+    processImage(0);
+  }
+}
+
+function renderAll() {
+  renderTabs(); renderWorkspaceBg(); renderCharacters(); renderMsgTypeTabs(); updateMsgFields(); renderBoxes();
+  document.getElementById('downloadBtn').style.display = S.images.length ? '' : 'none';
+}
+setupImgZone(); renderAll();
+window.addEventListener('resize', updateWorkspaceScale);
+updateWorkspaceScale();
+</script>
+</body>
+</html>
