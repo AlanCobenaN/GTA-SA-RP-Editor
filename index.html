@@ -561,8 +561,7 @@ function updateSelectedBox() {
   b.bgColor = document.getElementById('boxBgColor').value;
   b.bgOpacity = parseInt(document.getElementById('boxBgOpacity').value);
   document.getElementById('boxBgColorRow').style.display = b.bgType === 'custom' ? '' : 'none';
-  const el = document.querySelector(`.rp-box[data-id="${b.id}"]`);
-  if (el) { el.style.left=b.x+'px'; el.style.top=b.y+'px'; el.style.width=b.w+'px'; el.style.minHeight=b.h+'px'; }
+  renderBoxes();
 }
 
 function renderBoxSettings() {
