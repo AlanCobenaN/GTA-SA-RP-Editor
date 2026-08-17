@@ -824,6 +824,10 @@ function renderAll() {
   renderTabs(); renderWorkspaceBg(); renderCharacters(); renderMsgTypeTabs(); updateMsgFields(); renderBoxes();
   document.getElementById('downloadBtn').style.display = S.images.length ? '' : 'none';
 }
+document.getElementById('tabBar').addEventListener('wheel', e => {
+  e.preventDefault();
+  document.getElementById('tabBar').scrollLeft += e.deltaY;
+});
 setupImgZone(); renderAll();
 window.addEventListener('resize', updateWorkspaceScale);
 updateWorkspaceScale();
