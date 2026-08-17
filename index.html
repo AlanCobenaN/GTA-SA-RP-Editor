@@ -124,6 +124,14 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',Tahoma,sans-serif;b
 .img-upload-zone{border:2px dashed var(--border);border-radius:5px;padding:16px;text-align:center;cursor:pointer;transition:all .15s;margin-bottom:6px}
 .img-upload-zone:hover{border-color:var(--accent);background:rgba(0,138,175,.05)}
 .img-upload-zone p{font-size:10px;color:var(--text2)}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:99999;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay.open{opacity:1;pointer-events:auto}
+.modal-box{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:24px 28px;max-width:380px;width:90%;text-align:center;transform:scale(.9);transition:transform .2s}
+.modal-overlay.open .modal-box{transform:scale(1)}
+.modal-box h3{font-size:14px;color:var(--accent2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
+.modal-box p{font-size:11px;color:var(--text2);margin-bottom:16px;line-height:1.5}
+.modal-btns{display:flex;gap:8px;justify-content:center}
 </style>
 </head>
 <body>
@@ -268,6 +276,7 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',Tahoma,sans-serif;b
       <span class="title" id="workspaceInfo"></span>
       <div style="flex:1"></div>
       <button class="btn btn-primary btn-sm" onclick="downloadAllAsJPG()" id="downloadBtn" style="display:none">Descargar JPG</button>
+      <button class="btn btn-danger btn-sm" onclick="confirmClearAll()">Limpiar Todo</button>
     </div>
     <div class="workspace-scroll" id="workspaceScroll">
       <div class="workspace" id="workspace">
@@ -278,6 +287,17 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',Tahoma,sans-serif;b
           <p>Sube imágenes desde la barra lateral</p>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="clearModal">
+  <div class="modal-box">
+    <h3>¿Limpiar todo?</h3>
+    <p>Se eliminarán todos los personajes, imágenes, cajas y mensajes. Esta acción no se puede deshacer.</p>
+    <div class="modal-btns">
+      <button class="btn btn-secondary btn-sm" onclick="closeClearModal()">Cancelar</button>
+      <button class="btn btn-danger btn-sm" onclick="clearAll()">Sí, limpiar</button>
     </div>
   </div>
 </div>
@@ -823,12 +843,52 @@ function downloadAllAsJPG() {
 function renderAll() {
   renderTabs(); renderWorkspaceBg(); renderCharacters(); renderMsgTypeTabs(); updateMsgFields(); renderBoxes();
   document.getElementById('downloadBtn').style.display = S.images.length ? '' : 'none';
+  saveToLocal();
 }
+
+// ==================== LOCAL STORAGE ====================
+const STORAGE_KEY = 'gta_rp_editor';
+function saveToLocal() {
+  try {
+    const data = { characters: S.characters, images: S.images, boxes: S.boxes, nextId: S.nextId, activeImageId: S.activeImageId, globalFont: S.globalFont, globalFontSize: S.globalFontSize };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch(e) {}
+}
+function loadFromLocal() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    S.characters = data.characters || [];
+    S.images = data.images || [];
+    S.boxes = data.boxes || [];
+    S.nextId = data.nextId || 1;
+    S.activeImageId = data.activeImageId || (S.images.length ? S.images[0].id : null);
+    S.globalFont = data.globalFont || 'Tahoma Bold';
+    S.globalFontSize = data.globalFontSize || 20;
+    if (!S.images.find(i => i.id === S.activeImageId)) S.activeImageId = S.images.length ? S.images[0].id : null;
+  } catch(e) {}
+}
+
+// ==================== CLEAR ALL ====================
+function confirmClearAll() {
+  document.getElementById('clearModal').classList.add('open');
+}
+function closeClearModal() {
+  document.getElementById('clearModal').classList.remove('open');
+}
+function clearAll() {
+  S.characters = []; S.images = []; S.boxes = []; S.activeImageId = null; S.selectedBoxId = null; S.nextId = 1;
+  localStorage.removeItem(STORAGE_KEY);
+  closeClearModal();
+  renderAll();
+}
+document.getElementById('clearModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeClearModal(); });
 document.getElementById('tabBar').addEventListener('wheel', e => {
   e.preventDefault();
   document.getElementById('tabBar').scrollLeft += e.deltaY;
 });
-setupImgZone(); renderAll();
+setupImgZone(); loadFromLocal(); renderAll();
 window.addEventListener('resize', updateWorkspaceScale);
 updateWorkspaceScale();
 </script>
