@@ -90,7 +90,7 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',Tahoma,sans-serif;b
 .workspace-toolbar .title{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px}
 .workspace-toolbar .sep{width:1px;height:18px;background:var(--border)}
 
-.workspace-scroll{flex:1;overflow:hidden;position:relative;background:#1a1a1a;display:flex;align-items:center;justify-content:center}
+.workspace-scroll{flex:1;overflow:auto;position:relative;background:#1a1a1a}
 .workspace{position:relative;background:#111;overflow:visible;transform-origin:top left;margin:0 auto}
 .workspace-bg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;overflow:hidden}
 .workspace-bg img{width:100%;height:100%;object-fit:contain;display:block}
@@ -331,7 +331,9 @@ function updateWorkspaceScale() {
   const availW = scroll.clientWidth, availH = scroll.clientHeight;
   workspaceScale = Math.min(availW / WORKSPACE_W, availH / WORKSPACE_H);
   ws.style.width = WORKSPACE_W + 'px'; ws.style.height = WORKSPACE_H + 'px';
-  ws.style.transform = `scale(${workspaceScale})`; ws.style.transformOrigin = 'center center';
+  ws.style.transform = `scale(${workspaceScale})`; ws.style.transformOrigin = 'top left';
+  ws.style.marginTop = Math.max(0, (availH - WORKSPACE_H * workspaceScale) / 2) + 'px';
+  ws.style.marginLeft = Math.max(0, (availW - WORKSPACE_W * workspaceScale) / 2) + 'px';
 }
 
 // ==================== MSG TYPE TABS ====================
@@ -521,8 +523,9 @@ function renderWorkspaceBg() {
 
 // ==================== BOXES ====================
 function addBox() {
-  const cx = snap(Math.max(0, Math.round(WORKSPACE_W / 2 - 210)));
-  const cy = snap(Math.max(0, Math.round(WORKSPACE_H / 2 - 60)));
+  const scroll = document.getElementById('workspaceScroll');
+  const cx = snap(Math.max(0, Math.round((scroll.scrollLeft + scroll.clientWidth / 2) / workspaceScale - 210)));
+  const cy = snap(Math.max(0, Math.round((scroll.scrollTop + scroll.clientHeight / 2) / workspaceScale - 60)));
   const box = {
     id: gid(), name: `Caja ${S.boxes.length + 1}`, imageId: S.activeImageId,
     x: cx, y: cy, w: 420, h: 120,
