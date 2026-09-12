@@ -193,6 +193,10 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',Tahoma,sans-serif;b
               <label>Frecuencia <span style="opacity:.5">(opcional, ej: ####)</span></label>
               <input type="text" id="msgFreq" placeholder="####" maxlength="4" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
             </div>
+            <div class="form-row" id="msgTargetRow" style="display:none">
+              <label>A quién le dice</label>
+              <select id="msgTarget"></select>
+            </div>
             <div class="form-row">
               <label id="msgTextLabel">Mensaje</label>
               <textarea id="msgText" rows="2" placeholder="Escribe..."></textarea>
@@ -311,6 +315,9 @@ const S = {
 };
 const MSG_TYPES = [
   { id: 'speech', label: 'Hablar' },
+  { id: 'shout', label: '/gritar' },
+  { id: 'whisper', label: '/sus' },
+  { id: 'tell', label: '/decira' },
   { id: 'action_short', label: '/ame' },
   { id: 'action_long', label: '/me' },
   { id: 'environment', label: 'Entorno' },
@@ -345,10 +352,11 @@ function renderMsgTypeTabs() {
 
 function updateMsgFields() {
   const t = currentMsgType, isRadio = t.startsWith('radio');
-  const needsChar = t === 'speech' || isRadio || t === 'action_long';
+  const needsChar = ['speech','shout','whisper','tell'].includes(t) || isRadio || t === 'action_long';
   document.getElementById('msgCharRow').style.display = needsChar ? '' : 'none';
   document.getElementById('msgRankRow').style.display = (isRadio && t !== 'radio_normal') ? '' : 'none';
   document.getElementById('msgFreqRow').style.display = (t === 'radio_normal') ? '' : 'none';
+  document.getElementById('msgTargetRow').style.display = (t === 'tell') ? '' : 'none';
   const lbl = document.getElementById('msgTextLabel');
   if (t === 'environment') lbl.textContent = 'Descripción del entorno';
   else if (t === 'action_short') lbl.textContent = 'Acción corta (ej: Aplaude)';
@@ -378,6 +386,9 @@ function renderCharacters() {
     `<li class="char-item"><span class="name">${c.name} ${c.lastName}</span><span class="delete" onclick="removeCharacter(${c.id})">&times;</span></li>`
   ).join('');
   document.getElementById('msgChar').innerHTML = S.characters.map(c =>
+    `<option value="${c.id}">${c.name} ${c.lastName}</option>`
+  ).join('');
+  document.getElementById('msgTarget').innerHTML = S.characters.map(c =>
     `<option value="${c.id}">${c.name} ${c.lastName}</option>`
   ).join('');
 }
@@ -592,9 +603,12 @@ function addMessage() {
   if (!box) return;
   const charId = parseInt(document.getElementById('msgChar').value);
   const character = S.characters.find(c => c.id === charId);
+  const targetId = parseInt(document.getElementById('msgTarget').value);
+  const targetC = S.characters.find(c => c.id === targetId);
   box.messages.push({
     id: gid(), type: currentMsgType,
     character: character ? `${character.name} ${character.lastName}` : '',
+    target: targetC ? `${targetC.name} ${targetC.lastName}` : '',
     rank: document.getElementById('msgRank').value.trim(),
     freq: document.getElementById('msgFreq').value.trim(),
     text
@@ -617,6 +631,18 @@ function fmtMsg(m) {
     case 'speech': {
       const pre = m.rank ? `[${escH(m.rank)}]` : (m.character ? '[ING]' : '');
       return `<span class="rp-msg" style="${base}"><span style="color:#E7D9B0">${pre} ${escH(m.character||'')} dice:</span> <span style="color:#EBF4F6">${escH(m.text)}</span></span>`;
+    }
+    case 'shout': {
+      const pre = m.rank ? `[${escH(m.rank)}]` : (m.character ? '[ING]' : '');
+      return `<span class="rp-msg" style="${base}"><span style="color:#E7D9B0">${pre} ${escH(m.character||'')} grita:</span> <span style="color:#EBF4F6">${escH(m.text)}</span></span>`;
+    }
+    case 'whisper': {
+      const pre = m.rank ? `[${escH(m.rank)}]` : (m.character ? '[ING]' : '');
+      return `<span class="rp-msg" style="${base}"><span style="color:#E7D9B0">${pre} ${escH(m.character||'')} susurra:</span> <span style="color:#EBF4F6">${escH(m.text)}</span></span>`;
+    }
+    case 'tell': {
+      const pre = m.rank ? `[${escH(m.rank)}]` : (m.character ? '[ING]' : '');
+      return `<span class="rp-msg" style="${base}"><span style="color:#E7D9B0">${pre} ${escH(m.character||'')} dice (a ${escH(m.target||'')}):</span> <span style="color:#EBF4F6">${escH(m.text)}</span></span>`;
     }
     case 'action_short':
       return `<span class="rp-msg" style="${base}"><span style="color:#F900FF;font-weight:bold">* ${escH(m.text)} *</span></span>`;
@@ -645,6 +671,9 @@ function fmtMsg(m) {
 function getMsgPrefix(m) {
   switch (m.type) {
     case 'speech': { const pre = m.rank ? `[${m.rank}]` : (m.character ? '[ING]' : ''); return `${pre} ${m.character||''} dice: `; }
+    case 'shout': { const pre = m.rank ? `[${m.rank}]` : (m.character ? '[ING]' : ''); return `${pre} ${m.character||''} grita: `; }
+    case 'whisper': { const pre = m.rank ? `[${m.rank}]` : (m.character ? '[ING]' : ''); return `${pre} ${m.character||''} susurra: `; }
+    case 'tell': { const pre = m.rank ? `[${m.rank}]` : (m.character ? '[ING]' : ''); return `${pre} ${m.character||''} dice (a ${m.target||''}): `; }
     case 'action_short': return '* ';
     case 'action_long': return `* ${m.character||''} `;
     case 'environment': return '';
