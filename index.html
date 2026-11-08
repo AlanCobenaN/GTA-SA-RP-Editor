@@ -220,8 +220,8 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',Tahoma,sans-serif;b
           <div class="form-row">
             <label>Fondo</label>
             <select id="boxBgType" onchange="updateSelectedBox()">
-              <option value="transparent" selected>Transparente</option>
-              <option value="black">Negro absoluto</option>
+              <option value="transparent">Transparente</option>
+              <option value="black" selected>Negro absoluto</option>
               <option value="custom">Color personalizado</option>
             </select>
           </div>
@@ -400,8 +400,8 @@ function handleImageUpload(e) {
   files.forEach(file => {
     const reader = new FileReader();
     reader.onload = async function(ev) {
-      const compressed = await compressDataUrl(ev.target.result, 1920, 0.7);
-      S.images.push({ id: gid(), name: file.name.replace(/\.[^.]+$/,''), dataUrl: compressed });
+      const compressed = await compressDataUrl(ev.target.result, 0.75);
+      S.images.push({ id: gid(), name: file.name.replace(/\.[^.]+$/,''), dataUrl: compressed, norm: true });
       if (!S.activeImageId) S.activeImageId = S.images[S.images.length - 1].id;
       renderAll();
     };
@@ -421,8 +421,8 @@ function setupImgZone() {
     files.forEach(file => {
       const reader = new FileReader();
       reader.onload = async function(ev) {
-        const compressed = await compressDataUrl(ev.target.result, 1920, 0.7);
-        S.images.push({ id: gid(), name: file.name.replace(/\.[^.]+$/,''), dataUrl: compressed });
+        const compressed = await compressDataUrl(ev.target.result, 0.75);
+        S.images.push({ id: gid(), name: file.name.replace(/\.[^.]+$/,''), dataUrl: compressed, norm: true });
         if (!S.activeImageId) S.activeImageId = S.images[S.images.length - 1].id;
         renderAll();
       };
@@ -540,7 +540,7 @@ function addBox() {
   const box = {
     id: gid(), name: `Caja ${S.boxes.length + 1}`, imageId: S.activeImageId,
     x: cx, y: cy, w: 420, h: 120,
-    bgType: 'transparent', bgColor: '#000000', bgOpacity: 100, messages: []
+    bgType: 'black', bgColor: '#000000', bgOpacity: 100, messages: []
   };
   S.boxes.push(box);
   S.selectedBoxId = box.id;
@@ -857,7 +857,7 @@ function downloadAllAsJPG() {
       }).then(canvas => {
         const link = document.createElement('a');
         link.download = S.images[idx].name + '.jpg';
-        link.href = canvas.toDataURL('image/jpeg', 0.95);
+        link.href = canvas.toDataURL('image/jpeg', 1);
         results.push(link.href);
         processImage(idx + 1);
       });
@@ -901,17 +901,27 @@ function loadFromLocal() {
     S.globalFont = data.globalFont || 'Tahoma Bold';
     S.globalFontSize = data.globalFontSize || 20;
     if (!S.images.find(i => i.id === S.activeImageId)) S.activeImageId = S.images.length ? S.images[0].id : null;
+    const pending = S.images.filter(i => !i.norm);
+    if (pending.length) {
+      Promise.all(pending.map(async i => { i.dataUrl = await compressDataUrl(i.dataUrl, 0.75); i.norm = true; }))
+        .then(() => { saveToLocal(); renderAll(); updateWorkspaceScale(); });
+    }
   } catch(e) {}
 }
-function compressDataUrl(dataUrl, maxW, quality) {
+function compressDataUrl(dataUrl, quality) {
   return new Promise(resolve => {
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      const ratio = Math.min(maxW / img.naturalWidth, maxW / img.naturalHeight, 1);
-      canvas.width = img.naturalWidth * ratio;
-      canvas.height = img.naturalHeight * ratio;
-      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.width = WORKSPACE_W; canvas.height = WORKSPACE_H;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0, 0, WORKSPACE_W, WORKSPACE_H);
+      const ratio = Math.min(WORKSPACE_W / img.naturalWidth, WORKSPACE_H / img.naturalHeight);
+      const w = img.naturalWidth * ratio, h = img.naturalHeight * ratio;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, (WORKSPACE_W - w) / 2, (WORKSPACE_H - h) / 2, w, h);
       resolve(canvas.toDataURL('image/jpeg', quality));
     };
     img.onerror = () => resolve(dataUrl);
